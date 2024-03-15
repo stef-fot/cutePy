@@ -1,0 +1,118 @@
+MAXLEN = 50
+
+PARAM = 0
+FUNC = 1
+VARIABLE = 2
+
+VALUE = 100
+REFER = 101
+
+
+class Entity:
+    def __init__(self, name, type_, offset, parammode, nestinglevel):
+        self.name = name
+        self.type = type_
+        self.offset = offset
+        self.parammode = parammode
+        self.nestinglevel = nestinglevel
+        self.next = None
+
+
+class Scope:
+    def __init__(self, name, nestinglevel):
+        self.name = name
+        self.nestinglevel = nestinglevel
+        self.elist = None
+        self.next = None
+
+
+SCOPES = None
+
+
+def create_scope(name):
+    global SCOPES
+
+    news = Scope(name, 0)  # Create new scope object
+    if SCOPES is None:
+        SCOPES = news
+        news.nestinglevel = 0
+        news.next = None
+    else:
+        news.nestinglevel = SCOPES.nestinglevel + 1
+        news.next = SCOPES
+        SCOPES = news
+
+
+def delete_scope():
+    global SCOPES
+
+    if SCOPES is None:
+        print("DEN yparxei scope gia diagrafh")
+        exit(1)
+    SCOPES = SCOPES.next
+
+
+def insert_entity(name, type_, parammode):
+    global SCOPES
+
+    newe = Entity(name, type_, 0, parammode, SCOPES.nestinglevel)
+    lastoffset = -1
+    prev = None
+    tmp = SCOPES.elist
+    while tmp is not None:
+        prev = tmp
+        if tmp.type != FUNC:
+            lastoffset = tmp.offset
+        tmp = tmp.next
+    if prev is None:
+        SCOPES.elist = newe
+        newe.offset = 12
+    else:
+        prev.next = newe
+        newe.offset = lastoffset + 4
+
+
+def search_entity(name):
+    global SCOPES
+
+    stmp = SCOPES
+    while stmp is not None:
+        etmp = stmp.elist
+        while etmp is not None:
+            if etmp.name == name:
+                return etmp
+            etmp = etmp.next
+        stmp = stmp.next
+    return None
+
+
+def print_table():
+    global SCOPES
+
+    stmp = SCOPES
+    print("=========================================")
+    while stmp is not None:
+        etmp = stmp.elist
+        print(f"SCOPE: {stmp.name}")
+        print("\t", end="")
+        while etmp is not None:
+            if etmp.type == VARIABLE:
+                print(f"{etmp.name} ({etmp.offset}) -> ", end="")
+            elif etmp.type == PARAM:
+                print(f"{etmp.name} ({etmp.parammode}) -> ", end="")
+            elif etmp.type == FUNC:
+                print(f"{etmp.name} -> ", end="")
+            etmp = etmp.next
+        print()
+        stmp = stmp.next
+
+
+create_scope("main")
+insert_entity("x", VARIABLE, 0)
+insert_entity("y", VARIABLE, 0)
+insert_entity("z", VARIABLE, 0)
+insert_entity("myfunction", FUNC, 0)
+create_scope("myfunction")
+insert_entity("i", VARIABLE, 0)
+insert_entity("j", VARIABLE, 0)
+print_table()
